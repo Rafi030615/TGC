@@ -15,10 +15,8 @@ def zipf_mandelbrot(N, q, s):
     probabilities = weights / weights.sum()
     return probabilities
 
-def log_to_csv(data, filename='request_log_http.csv'):
-    with open(filename, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(data)
+def log_to_csv(data, writer):
+    writer.writerow(data)
 
 def fetch_content_size(url, base_url, executor):
     content_size = 0
@@ -58,7 +56,7 @@ def extract_links(html, base_url):
         start = end_quote + 1
     return links
 
-def make_request(url, results):
+def make_request(url, results, writer):
     try:
         start_time = datetime.now()
         with ThreadPoolExecutor(max_workers=10) as executor:
@@ -70,31 +68,34 @@ def make_request(url, results):
         
         log_data = [url, start_time, end_time, rtt, 200, total_content_size, throughput]
         results.append(log_data)
+        log_to_csv(log_data, writer)
         print(f"Request to {url} completed with status code: 200, RTT: {rtt:.6f} ms, Total content size: {total_content_size} bytes, Throughput: {throughput:.2f} bytes/ms")
     except requests.exceptions.RequestException as e:
         end_time = datetime.now()
         rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
         log_data = [url, start_time, end_time, rtt, f"Failed: {e}", 0, 0]
         results.append(log_data)
+        log_to_csv(log_data, writer)
         print(f"Request to {url} failed: {e}, RTT: {rtt:.6f} ms")
     
-    log_to_csv(log_data)
-
 def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
     threads = []
     interval = 1 / requests_per_second
     results = []
     
-    for _ in range(num_requests):
-        url = np.random.choice(urls, p=probabilities)
-        thread = threading.Thread(target=make_request, args=(url, results))
-        thread.start()
-        threads.append(thread)
-        time.sleep(interval)
-    
-    for thread in threads:
-        thread.join()
+    with open('request_log_http.csv', mode='a', newline='') as file:
+        writer = csv.writer(file)
+        
+        for _ in range(num_requests):
+            url = np.random.choice(urls, p=probabilities)
+            thread = threading.Thread(target=make_request, args=(url, results, writer))
+            thread.start()
+            threads.append(thread)
+            time.sleep(interval)
+        
+        for thread in threads:
+            thread.join()
     
     print("Traffic generation completed.")
     return results
