@@ -1,5 +1,4 @@
 import requests
-import threading
 import numpy as np
 from datetime import datetime
 import csv
@@ -20,18 +19,16 @@ def log_to_csv(data, filename='request_log_http.csv'):
         writer = csv.writer(file)
         writer.writerow(data)
 
-def fetch_content_size(url, base_url, executor):
+def fetch_content_size(url):
     content_size = 0
     try:
         response = requests.get(url)
         content_size += len(response.content)
         
-        # Extract and fetch linked resources asynchronously
-        links = extract_links(response.text, base_url)
-        futures = [executor.submit(requests.get, link) for link in links]
-        for future in as_completed(futures):
+        links = extract_links(response.text, url)
+        for link in links:
             try:
-                content_response = future.result()
+                content_response = requests.get(link)
                 content_size += len(content_response.content)
             except requests.exceptions.RequestException:
                 pass
@@ -61,16 +58,15 @@ def extract_links(html, base_url):
 def make_request(url, results):
     try:
         start_time = datetime.now()
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            total_content_size = fetch_content_size(url, url, executor)
+        content_size = fetch_content_size(url)
         end_time = datetime.now()
-        
         rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
-        throughput = total_content_size / rtt  # Throughput in bytes per millisecond
         
-        log_data = [url, start_time, end_time, rtt, 200, total_content_size, throughput]
+        throughput = content_size / rtt  # Throughput in bytes per millisecond
+        
+        log_data = [url, start_time, end_time, rtt, 200, content_size, throughput]
         results.append(log_data)
-        print(f"Request to {url} completed with status code: 200, RTT: {rtt:.6f} ms, Total content size: {total_content_size} bytes, Throughput: {throughput:.2f} bytes/ms")
+        print(f"Request to {url} completed with status code: 200, RTT: {rtt:.6f} ms, Content size: {content_size} bytes, Throughput: {throughput:.2f} bytes/ms")
     except requests.exceptions.RequestException as e:
         end_time = datetime.now()
         rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
@@ -82,20 +78,21 @@ def make_request(url, results):
 
 def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
-    threads = []
     interval = 1 / requests_per_second
     results = []
     
-    for _ in range(num_requests):
-        url = np.random.choice(urls, p=probabilities)
-        thread = threading.Thread(target=make_request, args=(url, results))
-        thread.start()
-        threads.append(thread)
-        time.sleep(interval)
-    
-    for thread in threads:
-        thread.join()
-    
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for _ in range(num_requests):
+            url = np.random.choice(urls, p=probabilities)
+            future = executor.submit(make_request, url, results)
+            futures.append(future)
+            time.sleep(interval)
+        
+        # Wait for all futures to complete
+        for future in as_completed(futures):
+            future.result()  # Ensure exceptions are raised
+
     print("Traffic generation completed.")
     return results
 
