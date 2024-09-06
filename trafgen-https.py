@@ -15,25 +15,28 @@ def zipf_mandelbrot(N, q, s):
     probabilities = weights / weights.sum()
     return probabilities
 
-def log_to_csv(data, filename='request_log_httpss.csv'):
+def log_to_csv(data, filename='request_log_https.csv'):
     with open(filename, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(data)
 
 def fetch_content_size(url, base_url, executor):
     content_size = 0
-    response = requests.get(url)
-    content_size += len(response.content)
-    
-    # Extract and fetch linked resources asynchronously
-    links = extract_links(response.text, base_url)
-    futures = [executor.submit(requests.get, link) for link in links]
-    for future in as_completed(futures):
-        try:
-            content_response = future.result()
-            content_size += len(content_response.content)
-        except requests.exceptions.RequestException:
-            pass
+    try:
+        response = requests.get(url)
+        content_size += len(response.content)
+        
+        # Extract and fetch linked resources asynchronously
+        links = extract_links(response.text, base_url)
+        futures = [executor.submit(requests.get, link) for link in links]
+        for future in as_completed(futures):
+            try:
+                content_response = future.result()
+                content_size += len(content_response.content)
+            except requests.exceptions.RequestException:
+                pass
+    except requests.exceptions.RequestException:
+        pass
     return content_size
 
 def extract_links(html, base_url):
@@ -58,28 +61,22 @@ def extract_links(html, base_url):
 def make_request(url, results):
     try:
         start_time = datetime.now()
-        response = requests.get(url)
-        end_time = datetime.now()
-        initial_rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
-        
-        content_size = len(response.content)
-        
-        # Fetch linked content size asynchronously
         with ThreadPoolExecutor(max_workers=10) as executor:
-            additional_content_size = fetch_content_size(url, url, executor)
+            total_content_size = fetch_content_size(url, url, executor)
+        end_time = datetime.now()
         
-        total_content_size = content_size + additional_content_size
-        throughput = total_content_size / initial_rtt  # Throughput in bytes per millisecond
+        rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
+        throughput = total_content_size / rtt  # Throughput in bytes per millisecond
         
-        log_data = [url, start_time, end_time, initial_rtt, 200, total_content_size, throughput]
+        log_data = [url, start_time, end_time, rtt, 200, total_content_size, throughput]
         results.append(log_data)
-        print(f"Request to {url} completed with status code: 200, Initial RTT: {initial_rtt:.6f} ms, Total content size: {total_content_size} bytes, Throughput: {throughput:.2f} bytes/ms")
+        print(f"Request to {url} completed with status code: 200, RTT: {rtt:.6f} ms, Total content size: {total_content_size} bytes, Throughput: {throughput:.2f} bytes/ms")
     except requests.exceptions.RequestException as e:
         end_time = datetime.now()
-        initial_rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
-        log_data = [url, start_time, end_time, initial_rtt, f"Failed: {e}", 0, 0]
+        rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
+        log_data = [url, start_time, end_time, rtt, f"Failed: {e}", 0, 0]
         results.append(log_data)
-        print(f"Request to {url} failed: {e}, Initial RTT: {initial_rtt:.6f} ms")
+        print(f"Request to {url} failed: {e}, RTT: {rtt:.6f} ms")
     
     log_to_csv(log_data)
 
