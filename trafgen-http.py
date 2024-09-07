@@ -1,10 +1,12 @@
 import requests
-import threading
 import numpy as np
 from datetime import datetime
+import csv
+import pandas as pd
 import argparse
 import time
 from urllib.parse import urljoin
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
@@ -22,7 +24,6 @@ def fetch_content_size(url):
         response = requests.get(url)
         content_size += len(response.content)
         
-        # Extract and fetch linked resources
         links = extract_links(response.text, url)
         for link in links:
             try:
@@ -72,27 +73,25 @@ def make_request(url, results):
         results.append(log_data)
         print(f"Request to {url} failed: {e}, RTT: {rtt:.6f} ms")
     
-    log_to_log(log_data)
-
-def generate_urls(base_url, count):
-    return [f"{base_url}/index{i}.html" for i in range(1, count + 1)]
+    log_to_csv(log_data)
 
 def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
-    threads = []
     interval = 1 / requests_per_second
     results = []
     
-    for _ in range(num_requests):
-        url = np.random.choice(urls, p=probabilities)
-        thread = threading.Thread(target=make_request, args=(url, results))
-        thread.start()
-        threads.append(thread)
-        time.sleep(interval)
-    
-    for thread in threads:
-        thread.join()
-    
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for _ in range(num_requests):
+            url = np.random.choice(urls, p=probabilities)
+            future = executor.submit(make_request, url, results)
+            futures.append(future)
+            time.sleep(interval)
+        
+        # Wait for all futures to complete
+        for future in as_completed(futures):
+            future.result()  # Ensure exceptions are raised
+
     print("Traffic generation completed.")
     return results
 
@@ -109,23 +108,22 @@ def calculate_totals_and_averages(results):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate traffic for URLs with Zipf distribution.')
-    parser.add_argument('-url', type=int, required=True, help='Number of URLs to generate')
+    parser.add_argument('-url', type=int, required=True, help='Number of URLs')
     parser.add_argument('-req', type=int, required=True, help='Number of requests')
     parser.add_argument('-rps', type=float, required=True, help='Requests per second')
     parser.add_argument('-zipf', type=float, nargs=2, required=True, help='Zipf parameters: q and s')
 
     args = parser.parse_args()
 
-    number_of_urls = args.url
     number_of_requests = args.req
     requests_per_second = args.rps
     zipf_params = tuple(args.zipf)
 
-    # Generate URLs
-    base_url = "http://10.10.200.1"
-    urls = generate_urls(base_url, number_of_urls)
-    
-    # Initialize the LOG file
+    # Load URLs from CSV
+    df = pd.read_csv('url_bineca_http.csv')
+    urls = df['URL'].tolist()
+
+    # Initialize the CSV file
     with open('request_log_http.log', mode='w') as file:
         file.write("URL\tStart Time\tEnd Time\tRTT (ms)\tStatus Code\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 
