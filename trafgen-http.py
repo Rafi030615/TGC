@@ -6,7 +6,6 @@ import argparse
 import time
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
-from threading import Timer
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
@@ -55,11 +54,14 @@ def extract_links(html, base_url):
     return links
 
 def make_request(url, results):
+    start_time = datetime.now()
     try:
-        start_time = datetime.now()
         content_size = fetch_content_size(url)
         end_time = datetime.now()
         rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
+        
+        if rtt < 1:
+            rtt = 1  # Avoid division by zero for throughput calculation
         
         throughput = content_size / rtt  # Throughput in bytes per millisecond
         
@@ -69,43 +71,32 @@ def make_request(url, results):
     except requests.exceptions.RequestException as e:
         end_time = datetime.now()
         rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
+        if rtt < 1:
+            rtt = 1
         log_data = [url, start_time, end_time, rtt, f"Failed: {e}", 0, 0]
         results.append(log_data)
         print(f"Request to {url} failed: {e}, RTT: {rtt:.6f} ms")
     
     log_to_log(log_data)
 
-def schedule_requests(executor, urls, probabilities, results, num_requests, requests_per_second):
-    if num_requests <= 0:
-        return
-
-    # Calculate the integer part of requests_per_second
-    int_rps = int(requests_per_second)
-    # Calculate the remainder to handle non-integer requests_per_second
-    remainder_rps = requests_per_second - int_rps
-
-    for _ in range(int_rps):
-        url = np.random.choice(urls, p=probabilities)
-        executor.submit(make_request, url, results)
-
-    # Handle the remainder part by using a probabilistic approach
-    if np.random.rand() < remainder_rps:
-        url = np.random.choice(urls, p=probabilities)
-        executor.submit(make_request, url, results)
-
-    num_requests -= requests_per_second
-
-    Timer(1, schedule_requests, args=[executor, urls, probabilities, results, num_requests, requests_per_second]).start()
-
 def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
     results = []
-    
     executor = ThreadPoolExecutor(max_workers=100)
-    schedule_requests(executor, urls, probabilities, results, num_requests, requests_per_second)
+    
+    for _ in range(num_requests):
+        url = np.random.choice(urls, p=probabilities)
+        executor.submit(make_request, url, results)
+        time.sleep(1 / requests_per_second)  # Sleep to achieve requests_per_second
+
+    executor.shutdown(wait=True)  # Wait for all threads to complete
     return results
 
 def calculate_totals_and_averages(results):
+    if not results:
+        print("No results to calculate totals and averages.")
+        return ["Total", "", "", 0, "", "", 0], ["Average", "", "", 0, "", "", 0]
+    
     total_rtt = sum(result[3] for result in results)
     total_throughput = sum(result[6] for result in results)
     average_rtt = total_rtt / len(results)
@@ -117,6 +108,8 @@ def calculate_totals_and_averages(results):
     return total_data, average_data
 
 def main():
+    print("############ Tunggu Sebentar ############")
+    
     parser = argparse.ArgumentParser(description='Generate traffic for URLs with Zipf distribution.')
     parser.add_argument('-url', type=int, required=True, help='Number of URLs')
     parser.add_argument('-req', type=int, required=True, help='Number of requests')
@@ -139,10 +132,6 @@ def main():
 
     results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params)
     
-    # Sleep to allow all requests to complete (wait slightly more than required time)
-    total_time = number_of_requests / requests_per_second
-    time.sleep(total_time + 2)  # Adding 2 seconds buffer
-
     total_data, average_data = calculate_totals_and_averages(results)
     
     with open('request_log_http.log', mode='a') as file:
