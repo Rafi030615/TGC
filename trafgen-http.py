@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 import argparse
 import time
+from urllib.parse import urljoin
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
