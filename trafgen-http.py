@@ -1,12 +1,12 @@
 import requests
 import numpy as np
 from datetime import datetime
-import csv
 import pandas as pd
 import argparse
 import time
 from urllib.parse import urljoin
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
+from threading import Timer
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
@@ -73,26 +73,36 @@ def make_request(url, results):
         results.append(log_data)
         print(f"Request to {url} failed: {e}, RTT: {rtt:.6f} ms")
     
-    log_to_csv(log_data)
+    log_to_log(log_data)
+
+def schedule_requests(executor, urls, probabilities, results, num_requests, requests_per_second):
+    if num_requests <= 0:
+        return
+
+    # Calculate the integer part of requests_per_second
+    int_rps = int(requests_per_second)
+    # Calculate the remainder to handle non-integer requests_per_second
+    remainder_rps = requests_per_second - int_rps
+
+    for _ in range(int_rps):
+        url = np.random.choice(urls, p=probabilities)
+        executor.submit(make_request, url, results)
+
+    # Handle the remainder part by using a probabilistic approach
+    if np.random.rand() < remainder_rps:
+        url = np.random.choice(urls, p=probabilities)
+        executor.submit(make_request, url, results)
+
+    num_requests -= requests_per_second
+
+    Timer(1, schedule_requests, args=[executor, urls, probabilities, results, num_requests, requests_per_second]).start()
 
 def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
-    interval = 1 / requests_per_second
     results = []
     
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = []
-        for _ in range(num_requests):
-            url = np.random.choice(urls, p=probabilities)
-            future = executor.submit(make_request, url, results)
-            futures.append(future)
-            time.sleep(interval)
-        
-        # Wait for all futures to complete
-        for future in as_completed(futures):
-            future.result()  # Ensure exceptions are raised
-
-    print("Traffic generation completed.")
+    executor = ThreadPoolExecutor(max_workers=100)
+    schedule_requests(executor, urls, probabilities, results, num_requests, requests_per_second)
     return results
 
 def calculate_totals_and_averages(results):
@@ -129,6 +139,10 @@ def main():
 
     results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params)
     
+    # Sleep to allow all requests to complete (wait slightly more than required time)
+    total_time = number_of_requests / requests_per_second
+    time.sleep(total_time + 2)  # Adding 2 seconds buffer
+
     total_data, average_data = calculate_totals_and_averages(results)
     
     with open('request_log_http.log', mode='a') as file:
