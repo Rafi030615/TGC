@@ -32,10 +32,10 @@ def fetch_content_size(url, cert):
                 # Send request to each link with SSL certificate
                 content_response = requests.get(link, cert=cert, verify=True, timeout=10)
                 content_size += len(content_response.content)
-            except requests.exceptions.RequestException:
-                pass
-    except requests.exceptions.RequestException:
-        pass
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to fetch content from link: {link}, error: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch content from URL: {url}, error: {e}")
     return content_size
 
 def extract_links(html, base_url):
@@ -125,8 +125,7 @@ def main():
     number_of_requests = args.req
     requests_per_second = args.rps
     zipf_params = tuple(args.zipf)
-    cert = '10.10.200.1.pem'  # Assuming the certificate is always named '10.10.200.1.pem'
-    key = '10.10.200.1-key.pem'  # Assuming the key is always named '10.10.200.1-key.pem'
+    cert = ('10.10.200.1.pem', '10.10.200.1-key.pem')  # Assuming the certificate is always named '10.10.200.1.pem'
 
     df = pd.read_csv('url_bineca_https.csv')
     urls = df['URL'].tolist()
@@ -134,7 +133,7 @@ def main():
     with open('request_log_https.log', mode='w') as file:
         file.write("URL\tStart Time\tEnd Time\tRTT (ms)\tStatus Code\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 
-    results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params, (cert, key))
+    results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params, cert)
     
     total_data, average_data = calculate_totals_and_averages(results)
     
