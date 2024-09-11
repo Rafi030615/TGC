@@ -58,19 +58,19 @@ def make_request(url, results):
     try:
         content_size = fetch_content_size(url)
         end_time = datetime.now()
-        rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
+        rtt = (end_time - start_time).total_seconds() * 1000
         
         if rtt < 1:
-            rtt = 1  # Avoid division by zero for throughput calculation
+            rtt = 1
         
-        throughput = content_size / rtt  # Throughput in bytes per millisecond
+        throughput = content_size / rtt
         
         log_data = [url, start_time, end_time, rtt, 200, content_size, throughput]
         results.append(log_data)
         print(f"Request to {url} completed with status code: 200, RTT: {rtt:.6f} ms, Content size: {content_size} bytes, Throughput: {throughput:.2f} bytes/ms")
     except requests.exceptions.RequestException as e:
         end_time = datetime.now()
-        rtt = (end_time - start_time).total_seconds() * 1000  # Convert to milliseconds
+        rtt = (end_time - start_time).total_seconds() * 1000
         if rtt < 1:
             rtt = 1
         log_data = [url, start_time, end_time, rtt, f"Failed: {e}", 0, 0]
@@ -87,9 +87,9 @@ def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     for _ in range(num_requests):
         url = np.random.choice(urls, p=probabilities)
         executor.submit(make_request, url, results)
-        time.sleep(1 / requests_per_second)  # Sleep to achieve requests_per_second
+        time.sleep(1 / requests_per_second)
 
-    executor.shutdown(wait=True)  # Wait for all threads to complete
+    executor.shutdown(wait=True)
     return results
 
 def calculate_totals_and_averages(results):
