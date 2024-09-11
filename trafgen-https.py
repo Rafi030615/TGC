@@ -6,7 +6,7 @@ import argparse
 import time
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
-import ssl
+import os
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
@@ -18,19 +18,19 @@ def log_to_log(data, filename='request_log_https.log'):
     with open(filename, mode='a') as file:
         file.write('\t'.join(map(str, data)) + '\n')
 
-def fetch_content_size(url):
+def fetch_content_size(url, cert):
     content_size = 0
     try:
-        # Send request with verification of SSL/TLS certificate
-        response = requests.get(url, verify=True, timeout=10)
+        # Send request with SSL certificate
+        response = requests.get(url, cert=cert, verify=True, timeout=10)
         content_size += len(response.content)
         
         # Extract links and follow them
         links = extract_links(response.text, url)
         for link in links:
             try:
-                # Send request to each link with timeout and SSL verification
-                content_response = requests.get(link, verify=True, timeout=10)
+                # Send request to each link with SSL certificate
+                content_response = requests.get(link, cert=cert, verify=True, timeout=10)
                 content_size += len(content_response.content)
             except requests.exceptions.RequestException:
                 pass
@@ -57,10 +57,10 @@ def extract_links(html, base_url):
         start = end_quote + 1
     return links
 
-def make_request(url, results):
+def make_request(url, results, cert):
     start_time = datetime.now()
     try:
-        content_size = fetch_content_size(url)
+        content_size = fetch_content_size(url, cert)
         end_time = datetime.now()
         rtt = (end_time - start_time).total_seconds() * 1000
         
@@ -83,14 +83,14 @@ def make_request(url, results):
     
     log_to_log(log_data)
 
-def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
+def generate_traffic(urls, num_requests, requests_per_second, zipf_params, cert):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
     results = []
     executor = ThreadPoolExecutor(max_workers=100)
     
     for _ in range(num_requests):
         url = np.random.choice(urls, p=probabilities)
-        executor.submit(make_request, url, results)
+        executor.submit(make_request, url, results, cert)
         time.sleep(1 / requests_per_second)
 
     executor.shutdown(wait=True)
@@ -125,6 +125,8 @@ def main():
     number_of_requests = args.req
     requests_per_second = args.rps
     zipf_params = tuple(args.zipf)
+    cert = '10.10.200.1.pem'  # Assuming the certificate is always named '10.10.200.1.pem'
+    key = '10.10.200.1-key.pem'  # Assuming the key is always named '10.10.200.1-key.pem'
 
     df = pd.read_csv('url_bineca_https.csv')
     urls = df['URL'].tolist()
@@ -132,7 +134,7 @@ def main():
     with open('request_log_https.log', mode='w') as file:
         file.write("URL\tStart Time\tEnd Time\tRTT (ms)\tStatus Code\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 
-    results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params)
+    results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params, (cert, key))
     
     total_data, average_data = calculate_totals_and_averages(results)
     
