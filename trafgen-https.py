@@ -22,7 +22,7 @@ def fetch_content_size(url, cert):
     content_size = 0
     try:
         # Send request with SSL certificate
-        response = requests.get(url, cert=cert, verify=True, timeout=10)
+        response = requests.get(url, cert=cert, verify=False, timeout=10)
         content_size += len(response.content)
         
         # Extract links and follow them
