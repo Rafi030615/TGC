@@ -119,13 +119,14 @@ def main():
     parser.add_argument('-req', type=int, required=True, help='Number of requests')
     parser.add_argument('-rps', type=float, required=True, help='Requests per second')
     parser.add_argument('-zipf', type=float, nargs=2, required=True, help='Zipf parameters: q and s')
+    parser.add_argument('-cacert', type=str, required=True, help='Path to the certificate file')
 
     args = parser.parse_args()
 
     number_of_requests = args.req
     requests_per_second = args.rps
     zipf_params = tuple(args.zipf)
-    cert = ('10.10.200.1.pem', '10.10.200.1-key.pem')  # Assuming the certificate is always named '10.10.200.1.pem'
+    cert = args.cacert
 
     df = pd.read_csv('url_bineca_https.csv')
     urls = df['URL'].tolist()
