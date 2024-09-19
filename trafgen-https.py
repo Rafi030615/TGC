@@ -1,3 +1,4 @@
+import warnings
 import requests
 import numpy as np
 from datetime import datetime
@@ -6,6 +7,10 @@ import argparse
 import time
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
+
+# Suppress only the specific InsecureRequestWarning from urllib3
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+warnings.simplefilter('ignore', InsecureRequestWarning)
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
