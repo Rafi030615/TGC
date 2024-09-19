@@ -6,7 +6,6 @@ import argparse
 import time
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
-import os
 
 def zipf_mandelbrot(N, q, s):
     ranks = np.arange(1, N + 1)
@@ -18,21 +17,21 @@ def log_to_log(data, filename='request_log_https.log'):
     with open(filename, mode='a') as file:
         file.write('\t'.join(map(str, data)) + '\n')
 
-def fetch_content_size(url, cert):
+def fetch_content_size(url):
     content_size = 0
     try:
-        response = requests.get(url, cert=cert, verify=False, timeout=10)
+        response = requests.get(url, verify=False)
         content_size += len(response.content)
         
         links = extract_links(response.text, url)
         for link in links:
             try:
-                content_response = requests.get(link, cert=cert, verify=True, timeout=10)
+                content_response = requests.get(link, verify=False)
                 content_size += len(content_response.content)
-            except requests.exceptions.RequestException as e:
-                print(f"Failed to fetch content from link: {link}, error: {e}")
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to fetch content from URL: {url}, error: {e}")
+            except requests.exceptions.RequestException:
+                pass
+    except requests.exceptions.RequestException:
+        pass
     return content_size
 
 def extract_links(html, base_url):
@@ -47,17 +46,17 @@ def extract_links(html, base_url):
         start_quote = html.find("\"", start_link + 1)
         end_quote = html.find("\"", start_quote + 1)
         link = html[start_quote + 1: end_quote]
-        if link.startswith(("https", "//")):
-            links.append(link if link.startswith("https") else "https:" + link)
+        if link.startswith(("http", "//")):
+            links.append(link if link.startswith("http") else "http:" + link)
         else:
             links.append(urljoin(base_url, link))
         start = end_quote + 1
     return links
 
-def make_request(url, results, cert):
+def make_request(url, results):
     start_time = datetime.now()
     try:
-        content_size = fetch_content_size(url, cert)
+        content_size = fetch_content_size(url)
         end_time = datetime.now()
         rtt = (end_time - start_time).total_seconds() * 1000
         
@@ -80,14 +79,14 @@ def make_request(url, results, cert):
     
     log_to_log(log_data)
 
-def generate_traffic(urls, num_requests, requests_per_second, zipf_params, cert):
+def generate_traffic(urls, num_requests, requests_per_second, zipf_params):
     probabilities = zipf_mandelbrot(len(urls), *zipf_params)
     results = []
     executor = ThreadPoolExecutor(max_workers=100)
     
     for _ in range(num_requests):
         url = np.random.choice(urls, p=probabilities)
-        executor.submit(make_request, url, results, cert)
+        executor.submit(make_request, url, results)
         time.sleep(1 / requests_per_second)
 
     executor.shutdown(wait=True)
@@ -116,22 +115,22 @@ def main():
     parser.add_argument('-req', type=int, required=True, help='Number of requests')
     parser.add_argument('-rps', type=float, required=True, help='Requests per second')
     parser.add_argument('-zipf', type=float, nargs=2, required=True, help='Zipf parameters: q and s')
-    parser.add_argument('-cacert', type=str, required=True, help='Path to the certificate file')
 
     args = parser.parse_args()
 
     number_of_requests = args.req
     requests_per_second = args.rps
     zipf_params = tuple(args.zipf)
-    cert = args.cacert
 
+    # Load URLs from CSV
     df = pd.read_csv('url_bineca_https.csv')
     urls = df['URL'].tolist()
 
+    # Initialize the CSV file
     with open('request_log_https.log', mode='w') as file:
         file.write("URL\tStart Time\tEnd Time\tRTT (ms)\tStatus Code\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 
-    results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params, cert)
+    results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params)
     
     total_data, average_data = calculate_totals_and_averages(results)
     
