@@ -21,15 +21,12 @@ def log_to_log(data, filename='request_log_https.log'):
 def fetch_content_size(url, cert):
     content_size = 0
     try:
-        # Send request with SSL certificate
         response = requests.get(url, cert=cert, verify=False, timeout=10)
         content_size += len(response.content)
         
-        # Extract links and follow them
         links = extract_links(response.text, url)
         for link in links:
             try:
-                # Send request to each link with SSL certificate
                 content_response = requests.get(link, cert=cert, verify=True, timeout=10)
                 content_size += len(content_response.content)
             except requests.exceptions.RequestException as e:
