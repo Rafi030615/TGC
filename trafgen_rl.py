@@ -133,7 +133,7 @@ def main():
 
     number_of_requests = args.req
     if args.rps.lower() == 'rf':
-        feature_columns = ['x1', 'x2', 'x3']  # Sesuaikan dengan nama kolom yang benar
+        feature_columns = ['x1', 'x2', 'x3']
         requests_per_second = load_model_and_forecast('rf_model.pkl', 'data_forecast.csv', feature_columns)
     else:
         try:
@@ -144,11 +144,9 @@ def main():
 
     zipf_params = tuple(args.zipf)
 
-    # Load URLs from CSV
     df = pd.read_csv('url_bineca_http.csv')
     urls = df['URL'].tolist()
 
-    # Initialize the CSV file
     with open('request_log_http.log', mode='w') as file:
         file.write("URL\tStart Time\tEnd Time\tRTT (ms)\tStatus Code\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 

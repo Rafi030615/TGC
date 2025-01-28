@@ -122,11 +122,9 @@ def main():
     requests_per_second = args.rps
     zipf_params = tuple(args.zipf)
 
-    # Load URLs from CSV
     df = pd.read_csv('url_bineca_http.csv')
     urls = df['URL'].tolist()
 
-    # Initialize the CSV file
     with open('request_log_http.log', mode='w') as file:
         file.write("URL\tStart Time\tEnd Time\tRTT (ms)\tStatus Code\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 
