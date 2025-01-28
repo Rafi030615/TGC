@@ -20,7 +20,7 @@ def fetch_uesimtun_data(url):
     try:
         start_time = datetime.now()
         process = subprocess.run(
-            ["ping", "-I", "uesimtun0", url],
+            ["ping", " -I", " uesimtun0 ", url],
             capture_output=True,
             text=True,
             timeout=30

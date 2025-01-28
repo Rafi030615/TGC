@@ -1,101 +1,100 @@
-URL
-0,www.bbc.com/news
-1,www.cnn.com
-2,www.nytimes.com
-3,www.reuters.com
-4,www.aljazeera.com
-5,www.foxnews.com
-6,www.nbcnews.com
-7,www.washingtonpost.com
-8,www.theguardian.com
-9,www.wsj.com
-10,www.bloomberg.com
-11,www.usatoday.com
-12,www.forbes.com
-13,www.npr.org
-14,abcnews.go.com
-15,www.latimes.com
-16,www.chicagotribune.com
-17,www.cbsnews.com
-18,www.politico.com
-19,www.huffpost.com
-20,www.newsweek.com
-21,time.com
-22,www.nationalgeographic.com
-23,www.economist.com
-24,www.buzzfeednews.com
-25,www.vox.com
-26,www.slate.com
-27,www.vice.com
-28,www.thedailybeast.com
-29,www.telegraph.co.uk
-30,www.independent.co.uk
-31,www.metro.co.uk
-32,www.mirror.co.uk
-33,www.thesun.co.uk
-34,www.express.co.uk
-35,www.dailymail.co.uk
-36,www.standard.co.uk
-37,www.newyorker.com
-38,www.news.com.au
-39,www.smh.com.au
-40,www.theaustralian.com.au
-41,www.heraldsun.com.au
-42,www.theage.com.au
-43,www.nzherald.co.nz
-44,www.cbc.ca
-45,www.ctvnews.ca
-46,www.globalnews.ca
-47,www.thestar.com
-48,www.theglobeandmail.com
-49,www.smh.com.au
-50,www.torontosun.com
-51,www.france24.com
-52,www.lemonde.fr
-53,www.dw.com
-54,www.spiegel.de
-55,www.corriere.it
-56,www.ansa.it
-57,www.elpais.com
-58,www.abc.es
-59,www.elmundo.es
-60,www.levante-emv.com
-61,www.20minutos.es
-62,www.laopiniondemurcia.es
-63,www.eldiario.es
-64,www.dagbladet.no
-65,www.vg.no
-66,www.aftonbladet.se
-67,www.dn.se
-68,www.expressen.se
-69,www.yle.fi
-70,www.hs.fi
-71,www.ilkka.fi
-72,www.sttinfo.fi
-73,www.koreatimes.co.kr
-74,www.koreaherald.com
-75,www.japantimes.co.jp
-76,www.asahi.com
-77,www.chinapost.com.tw
-78,www.straitstimes.com
-79,www.scmp.com
-80,www.thejakartapost.com
-81,www.thestar.com.my
-82,www.thesundaily.my
-83,www.bernama.com
-84,www.thanhniennews.com
-85,www.bangkokpost.com
-86,www.nationthailand.com
-87,www.manilatimes.net
-88,www.gmanetwork.com/news
-89,www.philstar.com
-90,www.rappler.com
-91,www.smh.com.au
-92,www.theglobeandmail.com
-93,www.thestar.com
-94,www.cbc.ca
-95,www.ctvnews.ca
-96,www.globalnews.ca
-97,www.heraldsun.com.au
-98,www.nzherald.co.nz
-99,www.france24.com
+0, testhtml5.vulnweb.com
+1, testphp.vulnweb.com
+2, testasp.vulnweb.com
+3, testaspnet.vulnweb.com
+4, rest.vulnweb.com
+5, testhtml5.vulnweb.com
+6, testphp.vulnweb.com
+7, testasp.vulnweb.com
+8, testaspnet.vulnweb.com
+9, rest.vulnweb.com
+10, testhtml5.vulnweb.com
+11, testphp.vulnweb.com
+12, testasp.vulnweb.com
+13, testaspnet.vulnweb.com
+14, rest.vulnweb.com
+15, testhtml5.vulnweb.com
+16, testphp.vulnweb.com
+17, testasp.vulnweb.com
+18, testaspnet.vulnweb.com
+19, rest.vulnweb.com
+20, testhtml5.vulnweb.com
+21, testphp.vulnweb.com
+22, testasp.vulnweb.com
+23, testaspnet.vulnweb.com
+24, rest.vulnweb.com
+25, testhtml5.vulnweb.com
+26, testphp.vulnweb.com
+27, testasp.vulnweb.com
+28, testaspnet.vulnweb.com
+29, rest.vulnweb.com
+30, testhtml5.vulnweb.com
+31, testphp.vulnweb.com
+32, testasp.vulnweb.com
+33, testaspnet.vulnweb.com
+34, rest.vulnweb.com
+35, testhtml5.vulnweb.com
+36, testphp.vulnweb.com
+37, testasp.vulnweb.com
+38, testaspnet.vulnweb.com
+39, rest.vulnweb.com
+40, testhtml5.vulnweb.com
+41, testphp.vulnweb.com
+42, testasp.vulnweb.com
+43, testaspnet.vulnweb.com
+44, rest.vulnweb.com
+45, testhtml5.vulnweb.com
+46, testphp.vulnweb.com
+47, testasp.vulnweb.com
+48, testaspnet.vulnweb.com
+49, rest.vulnweb.com
+50, testhtml5.vulnweb.com
+51, testphp.vulnweb.com
+52, testasp.vulnweb.com
+53, testaspnet.vulnweb.com
+54, rest.vulnweb.com
+55, testhtml5.vulnweb.com
+56, testphp.vulnweb.com
+57, testasp.vulnweb.com
+58, testaspnet.vulnweb.com
+59, rest.vulnweb.com
+60, testhtml5.vulnweb.com
+61, testphp.vulnweb.com
+62, testasp.vulnweb.com
+63, testaspnet.vulnweb.com
+64, rest.vulnweb.com
+65, testhtml5.vulnweb.com
+66, testphp.vulnweb.com
+67, testasp.vulnweb.com
+68, testaspnet.vulnweb.com
+69, rest.vulnweb.com
+70, testhtml5.vulnweb.com
+71, testphp.vulnweb.com
+72, testasp.vulnweb.com
+73, testaspnet.vulnweb.com
+74, rest.vulnweb.com
+75, testhtml5.vulnweb.com
+76, testphp.vulnweb.com
+77, testasp.vulnweb.com
+78, testaspnet.vulnweb.com
+79, rest.vulnweb.com
+80, testhtml5.vulnweb.com
+81, testphp.vulnweb.com
+82, testasp.vulnweb.com
+83, testaspnet.vulnweb.com
+84, rest.vulnweb.com
+85, testhtml5.vulnweb.com
+86, testphp.vulnweb.com
+87, testasp.vulnweb.com
+88, testaspnet.vulnweb.com
+89, rest.vulnweb.com
+90, testhtml5.vulnweb.com
+91, testphp.vulnweb.com
+92, testasp.vulnweb.com
+93, testaspnet.vulnweb.com
+94, rest.vulnweb.com
+95, testhtml5.vulnweb.com
+96, testphp.vulnweb.com
+97, testasp.vulnweb.com
+98, testaspnet.vulnweb.com
+99, rest.vulnweb.com
