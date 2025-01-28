@@ -12,15 +12,15 @@ def zipf_mandelbrot(N, q, s):
     probabilities = weights / weights.sum()
     return probabilities
 
-def log_to_log(data, filename='request_log_uesimtun0.log'):
+def log_to_log(data, filename='request_log_uesimtun.log'):
     with open(filename, mode='a') as file:
         file.write('\t'.join(map(str, data)) + '\n')
 
-def fetch_uesimtun0_data(url):
+def fetch_uesimtun_data(url):
     try:
         start_time = datetime.now()
         process = subprocess.run(
-            ["uesimtun0", "-u", url],
+            ["ping", "-I", "uesimtun0", url],
             capture_output=True,
             text=True,
             timeout=30
@@ -41,7 +41,7 @@ def fetch_uesimtun0_data(url):
         return "Timeout", 0, 30000, 0  # Timeout dianggap 30 detik RTT
 
 def make_request(url, results):
-    status_code, content_size, rtt, throughput = fetch_uesimtun0_data(url)
+    status_code, content_size, rtt, throughput = fetch_uesimtun_data(url)
     log_data = [url, datetime.now(), status_code, rtt, content_size, throughput]
     results.append(log_data)
 
@@ -103,14 +103,14 @@ def main():
     df = pd.read_csv('url_bineca_http.csv')
     urls = df['URL'].tolist()
 
-    with open('request_log_uesimtun0.log', mode='w') as file:
+    with open('request_log_uesimtun.log', mode='w') as file:
         file.write("URL\tTimestamp\tStatus Code\tRTT (ms)\tContent Size (bytes)\tThroughput (bytes/ms)\n")
 
     results = generate_traffic(urls, number_of_requests, requests_per_second, zipf_params)
 
     total_data, average_data = calculate_totals_and_averages(results)
 
-    with open('request_log_uesimtun0.log', mode='a') as file:
+    with open('request_log_uesimtun.log', mode='a') as file:
         file.write('\t'.join(map(str, total_data)) + '\n')
         file.write('\t'.join(map(str, average_data)) + '\n')
 
