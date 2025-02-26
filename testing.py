@@ -3,8 +3,9 @@ from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 import socket
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urljoin, urlparse
 import re
-from urllib.parse import urljoin
 
 class SourceIPAdapter(HTTPAdapter):
     def __init__(self, source_address, **kwargs):
@@ -16,54 +17,61 @@ class SourceIPAdapter(HTTPAdapter):
         return super(SourceIPAdapter, self).init_poolmanager(*args, **kwargs)
 
 def extract_links(html, base_url):
-    """🔗 Cari semua link resource dari HTML pake regex (tanpa BeautifulSoup)"""
-    src_links = re.findall(r'src=["\'](.*?)["\']', html, re.IGNORECASE)
-    href_links = re.findall(r'href=["\'](.*?)["\']', html, re.IGNORECASE)
-    full_links = [urljoin(base_url, link) for link in src_links + href_links]
-    return full_links
+    pattern = r'<img[^>]+src=["\'](.*?)["\']|<script[^>]+src=["\'](.*?)["\']|<link[^>]+href=["\'](.*?)["\']'
+    matches = re.findall(pattern, html, re.IGNORECASE)
+    links = set()
+    for match in matches:
+        for link in match:
+            if link:
+                absolute_link = urljoin(base_url, link)
+                links.add(absolute_link)
+    return links
 
-def fetch_content_size(session, url):
-    """📦 Fetch semua content dan hitung size total"""
-    total_size = 0
+def fetch_url(session, url):
     try:
-        response = session.get(url)
-        total_size += len(response.content)
-        links = extract_links(response.text, url)
-        for link in links:
-            try:
-                res = session.get(link)
-                total_size += len(res.content)
-            except requests.exceptions.RequestException:
-                pass
+        response = session.get(url, timeout=5)
+        return len(response.content), response.status_code
+    except requests.exceptions.RequestException:
+        return 0, None
+
+def measure_performance(url, source_ip):
+    session = requests.Session()
+    session.mount('http://', SourceIPAdapter(source_ip))
+    session.mount('https://', SourceIPAdapter(source_ip))
+
+    # 🚀 Hitung RTT (hanya request awal)
+    start_rtt = time.time()
+    try:
+        response = session.get(url, timeout=5)
+        rtt = (time.time() - start_rtt) * 1000  # ms
+        status_code = response.status_code
+        print(f"⚡ Status Code: {status_code}")
+        print(f"🕒 RTT (initial request only): {rtt:.2f} ms")
     except requests.exceptions.RequestException as e:
-        print(f"💥 Error di {url}: {e}")
-    return total_size
+        print(f"💥 Error saat RTT: {e}")
+        return
 
-def measure_rtt_throughput(session, url):
-    """🕒 Ukur RTT, Latency, Throughput"""
-    start_time = time.time()
-    total_size_bytes = fetch_content_size(session, url)
-    end_time = time.time()
+    # ⚡ Fetch all content (parallel)
+    links = extract_links(response.text, url)
+    total_size = len(response.content)
 
-    total_size_kb = total_size_bytes / 1024
-    total_size_mb = total_size_kb / 1024
-    total_time_sec = end_time - start_time
-    rtt = total_time_sec * 1000
-    latency = rtt / 2
-    throughput_kbps = (total_size_kb * 8) / total_time_sec
-    throughput_mbps = throughput_kbps / 1024
+    start_fetch = time.time()
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_url = {executor.submit(fetch_url, session, link): link for link in links}
+        for future in as_completed(future_to_url):
+            size, _ = future.result()
+            total_size += size
+    fetch_time = time.time() - start_fetch
 
-    print(f"⚡ URL: {url}")
-    print(f"🕒 RTT: {rtt:.2f} ms")
-    print(f"⏳ Latency: {latency:.2f} ms")
-    print(f"📦 Total Size: {total_size_bytes} bytes ({total_size_kb:.2f} KB / {total_size_mb:.2f} MB)")
-    print(f"🚀 Throughput: {throughput_kbps:.2f} Kbps ({throughput_mbps:.2f} Mbps)")
+    # 🚀 Hitung throughput dan latency
+    throughput = (total_size / 1024) / fetch_time if fetch_time > 0 else 0  # KB/s
+    latency = fetch_time * 1000  # ms
 
-# 🚀 Session dengan source IP dipaksa lewat uesimtun0
-session = requests.Session()
-session.mount('http://', SourceIPAdapter('10.60.0.2'))
-session.mount('https://', SourceIPAdapter('10.60.0.2'))
+    print(f"📦 Total Content Size: {total_size / 1024:.2f} KB")
+    print(f"🚀 Throughput: {throughput:.2f} KB/s")
+    print(f"⏱️ Latency (full fetch): {latency:.2f} ms")
 
-# 🌐 Coba jalanin
-url = 'https://aljazeera.com/'
-measure_rtt_throughput(session, url)
+if __name__ == "__main__":
+    url = 'http://testasp.vulnweb.com/'
+    source_ip = '10.60.0.3'
+    measure_performance(url, source_ip)
