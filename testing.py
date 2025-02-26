@@ -2,6 +2,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 import socket
+import time
 
 class SourceIPAdapter(HTTPAdapter):
     def __init__(self, source_address, **kwargs):
@@ -13,10 +14,19 @@ class SourceIPAdapter(HTTPAdapter):
         return super(SourceIPAdapter, self).init_poolmanager(*args, **kwargs)
 
 session = requests.Session()
-session.mount('http://', SourceIPAdapter('10.60.0.1'))
-session.mount('https://', SourceIPAdapter('10.60.0.1'))
+session.mount('http://', SourceIPAdapter('10.60.0.2'))
+session.mount('https://', SourceIPAdapter('10.60.0.2'))
 
-# 🔥 Request dipaksa lewat uesimtun0
-response = session.get('http://testasp.vulnweb.com/')
-print(f"Status Code: {response.status_code}")
-print(f"Content: {response.text[:500]}")  # Cetak 500 karakter pertama
+# 🚀 Mulai hitung RTT
+url = 'http://testasp.vulnweb.com/'
+start_time = time.time()  # ⏱️ Waktu sebelum request
+try:
+    response = session.get(url)
+    end_time = time.time()  # ⏱️ Waktu setelah request
+
+    rtt = (end_time - start_time) * 1000  # RTT dalam ms
+    print(f"⚡ Status Code: {response.status_code}")
+    print(f"🕒 RTT: {rtt:.2f} ms")  # RTT dengan 2 desimal
+    print(f"📄 Content: {response.text[:500]}")  # Cetak 500 karakter pertama
+except requests.exceptions.RequestException as e:
+    print(f"💥 Error: {e}")
